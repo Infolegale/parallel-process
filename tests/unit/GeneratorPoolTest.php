@@ -15,6 +15,7 @@
 namespace Graze\ParallelProcess\Test\Unit;
 
 use Closure;
+use Graze\ParallelProcess\CallbackRun;
 use Graze\ParallelProcess\GeneratorPool;
 use Graze\ParallelProcess\Pool;
 use Graze\ParallelProcess\PoolInterface;
@@ -30,14 +31,16 @@ use Symfony\Component\Process\Process;
 class GeneratorPoolTest extends TestCase
 {
     /** @var mixed */
-    private $process;
+    private $generator;
 
     public function setUp()
     {
         parent::setUp();
 
-        $this->process = Mockery::mock(Process::class)
-            ->allows(['stop' => null, 'isStarted' => false, 'isRunning' => false]);
+        $this->generator = static function () {
+            yield Mockery::mock(Process::class)
+                ->allows(['stop' => null, 'isStarted' => false, 'isRunning' => false, 'start' => null]);
+        };
     }
 
     public function testGeneratorPoolIsARunInterface()
@@ -94,7 +97,7 @@ class GeneratorPoolTest extends TestCase
 
     public function testGeneratorPoolInitialStateWithNoRuns()
     {
-        $priorityPool = new GeneratorPool(new PriorityPool());
+        $priorityPool = new GeneratorPool(new Pool());
 
         $this->assertFalse($priorityPool->isSuccessful(), 'should not be successful');
         $this->assertFalse($priorityPool->isRunning(), 'should not be running');
@@ -110,9 +113,39 @@ class GeneratorPoolTest extends TestCase
             }
         };
 
-        $generatorPool = new GeneratorPool(new Pool());
-        $generatorPool->add(($generator));
+        $generatorPool = new GeneratorPool(new Pool(), $generator);
+        // $generatorPool->add(($generator));
 
         $this->assertEquals(1, $generatorPool->count());
+    }
+
+    public function testGeneratorPoolWillDelegateStart()
+    {
+        $generatorPool = new GeneratorPool(new Pool());
+        $generatorPool->add(function () {
+            yield new CallbackRun(function () {
+                return true;
+            });
+        });
+
+        $generatorPool->run();
+
+        $this->assertTrue($generatorPool->isSuccessful());
+    }
+
+    public function testGeneratorPoolWillAcceptPriorityPoolAsDelegate()
+    {
+        $generatorPool = new GeneratorPool((new PriorityPool())->setMaxSimultaneous(3));
+        $generatorPool->add(function () {
+            for ($i = 0; $i < 10; ++$i) {
+                yield new CallbackRun(function () {
+                    return true;
+                });
+            }
+        });
+
+        $generatorPool->start();
+
+        $this->assertTrue($generatorPool->isSuccessful());
     }
 }

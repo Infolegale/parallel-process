@@ -52,6 +52,7 @@ class GeneratorPool implements PoolInterface, RunInterface
         }
         $this->decorated = $decorated;
         $this->generators = new SplQueue();
+
         if (null !== $generator) {
             $this->generators->enqueue($generator);
         }
@@ -77,11 +78,17 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
-     * @return PoolInterface|RunInterface|void
+     * @return PoolInterface|RunInterface
      */
     public function start()
     {
-        $this->decorated->start();
+        // PriorityPool should  just use run to autostack process in generators
+        if ($this->decorated instanceof PriorityPool) {
+            $this->run();
+            return $this;
+        }
+
+        return $this->decorated->start();
     }
 
     /**
@@ -108,8 +115,8 @@ class GeneratorPool implements PoolInterface, RunInterface
     {
         $interval = (int) ($interval * 1000000);
 
-        while ($generator = $this->generators->dequeue()) {
-            foreach ($generator() as $item) {
+        while (!$this->generators->isEmpty() && $generator = $this->generators->dequeue()) {
+            foreach (($generator)() as $item) {
                 $this->decorated->add($item);
                 while ($this->poll()) {
                     usleep($interval);

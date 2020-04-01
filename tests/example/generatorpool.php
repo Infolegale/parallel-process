@@ -34,5 +34,6 @@ $generator = static function () use ($pool) {
 };
 
 $generatorPool = new GeneratorPool($pool, $generator);
+var_dump($generatorPool->count());
 $lines = new Table($output, $generatorPool);
 $lines->run();
