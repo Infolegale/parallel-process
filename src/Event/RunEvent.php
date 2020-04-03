@@ -14,9 +14,8 @@
 namespace Graze\ParallelProcess\Event;
 
 use Graze\ParallelProcess\RunInterface;
-use Symfony\Component\EventDispatcher\Event;
 
-class RunEvent extends Event
+class RunEvent extends StoppableEvent
 {
     const STARTED    = 'started';
     const COMPLETED  = 'completed';

@@ -17,6 +17,7 @@ namespace Graze\ParallelProcess;
 use Closure;
 use Exception;
 use InvalidArgumentException;
+use Psr\EventDispatcher\StoppableEventInterface;
 use SplQueue;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -88,6 +89,12 @@ class GeneratorPool implements PoolInterface, RunInterface
             return $this;
         }
 
+        while (!$this->generators->isEmpty() && $generator = $this->generators->dequeue()) {
+            foreach ($generator() as $run) {
+                $this->decorated->add($run);
+            }
+        }
+
         return $this->decorated->start();
     }
 
@@ -113,6 +120,11 @@ class GeneratorPool implements PoolInterface, RunInterface
      */
     public function run($interval = self::CHECK_INTERVAL)
     {
+        // Not a PriorityPool must be started explicitly
+        if (!$this->decorated instanceof PriorityPool) {
+            $this->start();
+        }
+
         $interval = (int) ($interval * 1000000);
 
         while (!$this->generators->isEmpty() && $generator = $this->generators->dequeue()) {
@@ -124,11 +136,6 @@ class GeneratorPool implements PoolInterface, RunInterface
             }
         }
 
-        // Not a PriorityPool must be started explicitly
-        if (!$this->decorated instanceof PriorityPool) {
-            $this->start();
-        }
-
         // Let's finish remaining task
         while ($this->decorated->poll()) {
             usleep($interval);
@@ -138,6 +145,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return mixed[]
      */
     public function getAll()
@@ -146,6 +154,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return RunInterface[]
      */
     public function getWaiting()
@@ -154,6 +163,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return RunInterface[]
      */
     public function getRunning()
@@ -162,6 +172,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return RunInterface[]
      */
     public function getFinished()
@@ -178,6 +189,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @param string $name
      * @param callable $handler
      * @return PoolInterface|RunInterface
@@ -188,6 +200,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return bool
      */
     public function hasStarted()
@@ -196,6 +209,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return bool
      */
     public function isSuccessful()
@@ -204,6 +218,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return Exception[]|Throwable[]
      */
     public function getExceptions()
@@ -212,6 +227,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return bool
      */
     public function isRunning()
@@ -220,6 +236,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return array
      */
     public function getTags()
@@ -228,6 +245,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return float[]|null
      */
     public function getProgress()
@@ -236,10 +254,22 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
+     * @codeCoverageIgnore covered with tests of decorated service
      * @return float
      */
     public function getPriority()
     {
         return $this->decorated->getPriority();
+    }
+
+    /**
+     * @codeCoverageIgnore covered with tests of decorated service
+     * @param string $name
+     * @param StoppableEventInterface $event
+     * @return mixed|void
+     */
+    public function dispatch(string $name, StoppableEventInterface $event)
+    {
+        $this->decorated->dispatch($name, $event);
     }
 }

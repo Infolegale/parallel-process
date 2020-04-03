@@ -13,9 +13,10 @@
 
 namespace Graze\ParallelProcess\Event;
 
-use Symfony\Component\EventDispatcher\Event;
+use Psr\EventDispatcher\StoppableEventInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Psr\EventDispatcher\EventDispatcherInterface as PsrEventDispatcher;
 
 trait EventDispatcherTrait
 {
@@ -44,7 +45,7 @@ trait EventDispatcherTrait
      *
      * @return $this
      */
-    public function addListener($name, callable $handler)
+    public function addListener(string $name, callable $handler)
     {
         $this->assertEventName($name);
         $this->getEventDispatcher()->addListener($name, $handler);
@@ -53,14 +54,15 @@ trait EventDispatcherTrait
 
     /**
      * @param string $name
-     * @param Event  $event
+     * @param StoppableEventInterface  $event
      *
      * @return $this
      */
-    protected function dispatch($name, Event $event)
+    public function dispatch(string $name, StoppableEventInterface $event)
     {
         $this->assertEventName($name);
-        $this->getEventDispatcher()->dispatch($name, $event);
+        $this->getEventDispatcher()->dispatch($event, $name);
+
         return $this;
     }
 

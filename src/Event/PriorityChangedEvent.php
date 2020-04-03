@@ -14,9 +14,8 @@
 namespace Graze\ParallelProcess\Event;
 
 use Graze\ParallelProcess\PrioritisedInterface;
-use Symfony\Component\EventDispatcher\Event;
 
-class PriorityChangedEvent extends Event
+class PriorityChangedEvent extends StoppableEvent
 {
     const CHANGED = 'priority.changed';
 

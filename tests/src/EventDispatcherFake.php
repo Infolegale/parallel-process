@@ -14,6 +14,7 @@
 namespace Graze\ParallelProcess\Test;
 
 use Graze\ParallelProcess\Event\EventDispatcherTrait;
+use Graze\ParallelProcess\Event\StoppableEvent;
 use Symfony\Component\EventDispatcher\Event;
 
 class EventDispatcherFake
@@ -33,9 +34,9 @@ class EventDispatcherFake
 
     /**
      * @param string $eventName
-     * @param Event  $event
+     * @param StoppableEvent  $event
      */
-    public function doDispatch($eventName, Event $event)
+    public function doDispatch($eventName, StoppableEvent $event)
     {
         $this->dispatch($eventName, $event);
     }

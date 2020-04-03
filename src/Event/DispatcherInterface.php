@@ -13,6 +13,8 @@
 
 namespace Graze\ParallelProcess\Event;
 
+use Psr\EventDispatcher\StoppableEventInterface;
+
 interface DispatcherInterface
 {
     /**
@@ -21,5 +23,12 @@ interface DispatcherInterface
      *
      * @return $this
      */
-    public function addListener($name, callable $handler);
+    public function addListener(string $name, callable $handler);
+
+    /**
+     * @param string $name
+     * @param StoppableEventInterface $event
+     * @return mixed
+     */
+    public function dispatch(string $name, StoppableEventInterface $event);
 }

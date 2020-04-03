@@ -20,6 +20,7 @@ use Graze\ParallelProcess\GeneratorPool;
 use Graze\ParallelProcess\Pool;
 use Graze\ParallelProcess\PoolInterface;
 use Graze\ParallelProcess\PriorityPool;
+use Graze\ParallelProcess\ProcessRun;
 use Graze\ParallelProcess\RunInterface;
 use Graze\ParallelProcess\Test\TestCase;
 use Mockery;
@@ -55,6 +56,15 @@ class GeneratorPoolTest extends TestCase
         $generatorPool = new GeneratorPool(new Pool(), function () {
         });
         $this->assertInstanceOf(PoolInterface::class, $generatorPool);
+    }
+
+    public function testGeneratorPoolDecoratePoolInterface()
+    {
+        $mockPool = Mockery::mock(PoolInterface::class)
+            ->allows(["hasStarted" => false]);
+
+        $generatorPool = new GeneratorPool($mockPool);
+        $this->assertInstanceOf(GeneratorPool::class, $generatorPool);
     }
 
     public function testGeneratorPoolInitialStateWithProcess()
@@ -114,7 +124,6 @@ class GeneratorPoolTest extends TestCase
         };
 
         $generatorPool = new GeneratorPool(new Pool(), $generator);
-        // $generatorPool->add(($generator));
 
         $this->assertEquals(1, $generatorPool->count());
     }
@@ -128,24 +137,80 @@ class GeneratorPoolTest extends TestCase
             });
         });
 
-        $generatorPool->run();
+        $generatorPool->start();
 
         $this->assertTrue($generatorPool->isSuccessful());
     }
 
-    public function testGeneratorPoolWillAcceptPriorityPoolAsDelegate()
+    public function testGeneratorPoolWillStartWithPriorityPool()
     {
-        $generatorPool = new GeneratorPool((new PriorityPool())->setMaxSimultaneous(3));
+        $generatorPool = new GeneratorPool(new PriorityPool());
         $generatorPool->add(function () {
-            for ($i = 0; $i < 10; ++$i) {
+            yield new CallbackRun(function () {
+                return true;
+            });
+        });
+
+        $generatorPool->start();
+
+        $this->assertTrue($generatorPool->isSuccessful());
+    }
+
+    public function testGeneratorPoolWillRunPriorityPoolAsDelegate()
+    {
+        $generatorPool = new GeneratorPool((new PriorityPool())->setMaxSimultaneous(1));
+        $generatorPool->add(function () {
+            for ($i = 0; $i < 3; ++$i) {
+                $process = Mockery::mock(Process::class);
+                $process->shouldReceive('stop');
+                $process->shouldReceive('isStarted')
+                    ->andReturn(false, false, false, true); // add to pool, check start, check start, started
+                $process->shouldReceive('isRunning')->andReturn(false, true, false);
+                $process->shouldReceive('start');
+                $process->shouldReceive('isSuccessful')->andReturn(true);
+                yield $process;
+            }
+        });
+
+        $generatorPool->run(0);
+
+        $this->assertTrue($generatorPool->isSuccessful());
+    }
+
+    public function testGeneratorPoolWillRunPoolAsDelegate()
+    {
+        $generatorPool = new GeneratorPool(new Pool());
+        $generatorPool->add(function () {
+            for ($i = 0; $i < 3; ++$i) {
                 yield new CallbackRun(function () {
                     return true;
                 });
             }
         });
 
-        $generatorPool->start();
+        $generatorPool->run(0);
 
         $this->assertTrue($generatorPool->isSuccessful());
+    }
+
+    public function testGeneratorPoolTagsProxy()
+    {
+        $tags = ['test' => true];
+        $decorated = new Pool([], $tags);
+
+        $generatorPool = new GeneratorPool($decorated);
+
+        $this->assertEquals($generatorPool->getTags(), $tags);
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testGeneratorPoolWillFailToDecorateRunningPool()
+    {
+        $mockPool = Mockery::mock(PoolInterface::class)
+            ->allows(['hasStarted' => 'true']);
+
+        $generatedPool = new GeneratorPool($mockPool);
     }
 }
