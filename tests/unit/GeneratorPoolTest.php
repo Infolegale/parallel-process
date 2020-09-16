@@ -46,15 +46,15 @@ class GeneratorPoolTest extends TestCase
 
     public function testGeneratorPoolIsARunInterface()
     {
-        $generatorPool = new GeneratorPool(new Pool(), function () {
-        });
+        $generatorPool = new GeneratorPool(new Pool(), (function () {
+        })());
         $this->assertInstanceOf(RunInterface::class, $generatorPool);
     }
 
     public function testGeneratorPoolIsAPoolInterface()
     {
-        $generatorPool = new GeneratorPool(new Pool(), function () {
-        });
+        $generatorPool = new GeneratorPool(new Pool(), (function () {
+        })());
         $this->assertInstanceOf(PoolInterface::class, $generatorPool);
     }
 
@@ -69,9 +69,9 @@ class GeneratorPoolTest extends TestCase
 
     public function testGeneratorPoolInitialStateWithProcess()
     {
-        $generatorPool = new GeneratorPool(new Pool(), Closure::bind(function () {
+        $generatorPool = new GeneratorPool(new Pool(), (Closure::bind(function () {
             yield $this->process;
-        }, $this, self::class));
+        }, $this, self::class))());
 
         $this->assertFalse($generatorPool->isSuccessful());
         $this->assertFalse($generatorPool->isRunning());
@@ -90,7 +90,7 @@ class GeneratorPoolTest extends TestCase
             }
         };
 
-        $generatorPool = new GeneratorPool(new Pool(), $generator);
+        $generatorPool = new GeneratorPool(new Pool(), $generator());
 
         $this->assertEquals(1, $generatorPool->count());
     }
@@ -123,7 +123,7 @@ class GeneratorPoolTest extends TestCase
             }
         };
 
-        $generatorPool = new GeneratorPool(new Pool(), $generator);
+        $generatorPool = new GeneratorPool(new Pool(), $generator());
 
         $this->assertEquals(1, $generatorPool->count());
     }
@@ -131,11 +131,11 @@ class GeneratorPoolTest extends TestCase
     public function testGeneratorPoolWillDelegateStart()
     {
         $generatorPool = new GeneratorPool(new Pool());
-        $generatorPool->add(function () {
+        $generatorPool->add((function () {
             yield new CallbackRun(function () {
                 return true;
             });
-        });
+        })());
 
         $generatorPool->start();
 
@@ -145,11 +145,11 @@ class GeneratorPoolTest extends TestCase
     public function testGeneratorPoolWillStartWithPriorityPool()
     {
         $generatorPool = new GeneratorPool(new PriorityPool());
-        $generatorPool->add(function () {
+        $generatorPool->add((function () {
             yield new CallbackRun(function () {
                 return true;
             });
-        });
+        })());
 
         $generatorPool->start();
 
@@ -159,7 +159,7 @@ class GeneratorPoolTest extends TestCase
     public function testGeneratorPoolWillRunPriorityPoolAsDelegate()
     {
         $generatorPool = new GeneratorPool((new PriorityPool())->setMaxSimultaneous(1));
-        $generatorPool->add(function () {
+        $generatorPool->add((function () {
             for ($i = 0; $i < 3; ++$i) {
                 $process = Mockery::mock(Process::class);
                 $process->shouldReceive('stop');
@@ -170,7 +170,7 @@ class GeneratorPoolTest extends TestCase
                 $process->shouldReceive('isSuccessful')->andReturn(true);
                 yield $process;
             }
-        });
+        })());
 
         $generatorPool->run(0);
 
@@ -180,13 +180,13 @@ class GeneratorPoolTest extends TestCase
     public function testGeneratorPoolWillRunPoolAsDelegate()
     {
         $generatorPool = new GeneratorPool(new Pool());
-        $generatorPool->add(function () {
+        $generatorPool->add((function () {
             for ($i = 0; $i < 3; ++$i) {
                 yield new CallbackRun(function () {
                     return true;
                 });
             }
-        });
+        })());
 
         $generatorPool->run(0);
 

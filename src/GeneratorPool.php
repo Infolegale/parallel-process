@@ -45,7 +45,7 @@ class GeneratorPool implements PoolInterface, RunInterface
      * @param PoolInterface $decorated
      * @param Closure $generator
      */
-    public function __construct(PoolInterface $decorated, Closure $generator = null)
+    public function __construct(PoolInterface $decorated, \Generator $generator = null)
     {
         /** @var RunInterface $decorated */
         if ($decorated->hasStarted()) {
@@ -60,7 +60,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     }
 
     /**
-     * @param RunInterface|Process|Closure $item
+     * @param RunInterface|Process|\Generator $item
      * @param array $tags
      * @return PoolInterface
      *
@@ -69,7 +69,7 @@ class GeneratorPool implements PoolInterface, RunInterface
     public function add($item, array $tags = [])
     {
         // Adding a generator
-        if ($item instanceof Closure) {
+        if ($item instanceof \Generator) {
             $this->generators->enqueue($item);
             return $this;
         }
@@ -90,7 +90,7 @@ class GeneratorPool implements PoolInterface, RunInterface
         }
 
         while (!$this->generators->isEmpty() && $generator = $this->generators->dequeue()) {
-            foreach ($generator() as $run) {
+            foreach ($generator as $run) {
                 $this->decorated->add($run);
             }
         }
@@ -128,7 +128,7 @@ class GeneratorPool implements PoolInterface, RunInterface
         $interval = (int) ($interval * 1000000);
 
         while (!$this->generators->isEmpty() && $generator = $this->generators->dequeue()) {
-            foreach (($generator)() as $item) {
+            foreach (($generator) as $item) {
                 $this->decorated->add($item);
                 while ($this->poll()) {
                     usleep($interval);

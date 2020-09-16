@@ -58,9 +58,6 @@ test-matrix-lowest: ## Test all version, with the lowest version
 	${MAKE} build-update
 
 test-matrix: ## Run the unit tests against multiple targets.
-	${MAKE} PHP_VER="5.6" build-update test
-	${MAKE} PHP_VER="7.0" build-update test
-	${MAKE} PHP_VER="7.1" build-update test
 	${MAKE} PHP_VER="7.2" build-update test
 
 test-coverage: ## Run all tests and output coverage to the console.

@@ -75,6 +75,24 @@ $pool2->add(new Process('sleep 100'));
 $pool->add($pool2);
 $pool->run(); // blocking that will run till it finishes
 ```
+### Process Generator Pool
+
+In case you have to delegate a large set of subprocesses keeping an eye on the concurrency, you can feed 
+a Pool/PriorityPool with a generator function.
+
+```php
+$pool = new PriorityPool();
+$pool->setMaxSimultaneous(5);
+
+$generator = (static function () {
+    for ($i = 0; $i < 5; $i++) {
+        $time = $i + 1;
+        yield new ProcessRun(new Process(sprintf('for i in `seq 1 %d` ; do date ; sleep 1 ; done', $time)), ['sleep' => $time]);
+    }
+})();
+
+$generatorPool = new GeneratorPool($pool, $generator);
+```
 
 ### Display
 

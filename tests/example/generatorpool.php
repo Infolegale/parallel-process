@@ -24,16 +24,16 @@ use Symfony\Component\Process\Process;
 $output = new ConsoleOutput(ConsoleOutput::VERBOSITY_VERY_VERBOSE);
 
 $pool = new \Graze\ParallelProcess\PriorityPool();
-$pool->setMaxSimultaneous(5);
+$pool->setMaxSimultaneous(2);
 
-$generator = static function () use ($pool) {
+$generator = (static function () {
     for ($i = 0; $i < 5; $i++) {
         $time = $i + 1;
         yield new ProcessRun(new Process(sprintf('for i in `seq 1 %d` ; do date ; sleep 1 ; done', $time)), ['sleep' => $time]);
     }
-};
+})();
 
 $generatorPool = new GeneratorPool($pool, $generator);
-var_dump($generatorPool->count());
+
 $lines = new Table($output, $generatorPool);
 $lines->run();
